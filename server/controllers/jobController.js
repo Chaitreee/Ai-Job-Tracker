@@ -44,15 +44,58 @@ export const createJob = async (req, res) => {
 // @route GET /api/v1/jobs
 export const getJobs = async (req, res) => {
     try {
-        const jobs = await Job.find({
+
+        const {
+            status,
+            search,
+            sort,
+        } = req.query;
+
+        // Base query (always filter by logged-in user)
+        const query = {
             user: req.user._id,
-        }).sort({
+        };
+
+        // Status filter
+        if (status) {
+            query.status = status;
+        }
+
+        // Search by company or role
+        if (search) {
+            query.$or = [
+                {
+                    company: {
+                        $regex: search,
+                        $options: "i",
+                    },
+                },
+                {
+                    role: {
+                        $regex: search,
+                        $options: "i",
+                    },
+                },
+            ];
+        }
+
+        // Sorting
+        let sortOption = {
             createdAt: -1,
-        });
+        };
+
+        if (sort === "oldest") {
+            sortOption = {
+                createdAt: 1,
+            };
+        }
+
+        const jobs = await Job.find(query).sort(sortOption);
 
         return res.status(200).json(jobs);
 
     } catch (error) {
+
         console.error(error);
 
         return res.status(500).json({
