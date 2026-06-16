@@ -3,7 +3,10 @@ import cors from "cors";
 import dotenv from "dotenv";
 
 import connectDB from "./config/db.js";
+
 import authRoutes from "./routes/authRoutes.js";
+import jobRoutes from "./routes/jobRoutes.js";
+
 // Load environment variables
 dotenv.config();
 
@@ -19,7 +22,9 @@ app.get("/", (req, res) => {
     res.send("Server is running successfully!");
 });
 
+//mounting routes
 app.use("/api/v1/auth", authRoutes); // /v1 - API versioning
+app.use("/api/v1/jobs", jobRoutes);
 
 // Port
 const PORT = process.env.PORT || 5000;
