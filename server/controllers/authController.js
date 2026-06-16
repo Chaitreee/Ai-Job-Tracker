@@ -77,3 +77,10 @@ export const loginUser = async (req, res) => {
         });
     }
 };
+
+
+// @desc Get current logged-in user
+// @route GET /api/v1/auth/me
+export const getProfile = async (req, res) => {
+    return res.status(200).json(req.user);
+};
