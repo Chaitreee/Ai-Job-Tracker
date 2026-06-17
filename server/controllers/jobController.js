@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Job from "../models/Job.js";
 
 // @desc Create a new job
@@ -57,22 +58,24 @@ export const getJobs = async (req, res) => {
         };
 
         // Status filter
-        if (status) {
+        if (status && status !== "All") {
             query.status = status;
         }
 
         // Search by company or role
-        if (search) {
+        if (search?.trim()) {
+            const searchTerm = search.trim();
+
             query.$or = [
                 {
                     company: {
-                        $regex: search,
+                        $regex: searchTerm,
                         $options: "i",
                     },
                 },
                 {
                     role: {
-                        $regex: search,
+                        $regex: searchTerm,
                         $options: "i",
                     },
                 },
@@ -108,6 +111,7 @@ export const getJobs = async (req, res) => {
 // @route PUT /api/v1/jobs/:id
 export const updateJob = async (req, res) => {
     try {
+
         const job = await Job.findById(req.params.id);
 
         // Check if job exists
@@ -124,19 +128,28 @@ export const updateJob = async (req, res) => {
             });
         }
 
+        const {
+            company,
+            role,
+            jobLink,
+            status,
+            deadline,
+            notes,
+            interviewExperience,
+        } = req.body;
+
         // Store old status
         const oldStatus = job.status;
 
         // Update fields only if provided
-        job.company = req.body.company ?? job.company;
-        job.role = req.body.role ?? job.role;
-        job.jobLink = req.body.jobLink ?? job.jobLink;
-        job.status = req.body.status ?? job.status;
-        job.deadline = req.body.deadline ?? job.deadline;
-        job.notes = req.body.notes ?? job.notes;
+        job.company = company ?? job.company;
+        job.role = role ?? job.role;
+        job.jobLink = jobLink ?? job.jobLink;
+        job.status = status ?? job.status;
+        job.deadline = deadline ?? job.deadline;
+        job.notes = notes ?? job.notes;
         job.interviewExperience =
-            req.body.interviewExperience ??
-            job.interviewExperience;
+            interviewExperience ?? job.interviewExperience;
 
         // If status changed, add timeline event
         if (oldStatus !== job.status) {
@@ -151,6 +164,7 @@ export const updateJob = async (req, res) => {
         return res.status(200).json(job);
 
     } catch (error) {
+
         console.error(error);
 
         return res.status(500).json({
@@ -163,6 +177,7 @@ export const updateJob = async (req, res) => {
 // @route DELETE /api/v1/jobs/:id
 export const deleteJob = async (req, res) => {
     try {
+
         const job = await Job.findById(req.params.id);
 
         // Check if job exists
@@ -186,6 +201,58 @@ export const deleteJob = async (req, res) => {
         });
 
     } catch (error) {
+
+        console.error(error);
+
+        return res.status(500).json({
+            message: "Internal Server Error",
+        });
+    }
+};
+
+// @desc Get dashboard statistics
+// @route GET /api/v1/jobs/stats
+export const getJobStats = async (req, res) => {
+    try {
+
+        const stats = await Job.aggregate([
+            {
+                $match: {
+                    user: new mongoose.Types.ObjectId(req.user._id),
+                },
+            },
+            {
+                $group: {
+                    _id: "$status",
+                    count: {
+                        $sum: 1,
+                    },
+                },
+            },
+        ]);
+
+        // Default counts
+        const result = {
+            totalJobs: 0,
+            Applied: 0,
+            OA: 0,
+            Interview: 0,
+            Offer: 0,
+            Rejected: 0,
+        };
+
+        // Fill counts
+        stats.forEach((item) => {
+
+            result[item._id] = item.count;
+            result.totalJobs += item.count;
+
+        });
+
+        return res.status(200).json(result);
+
+    } catch (error) {
+
         console.error(error);
 
         return res.status(500).json({

@@ -5,6 +5,7 @@ import {
     getJobs,
     updateJob,
     deleteJob,
+    getJobStats,
 } from "../controllers/jobController.js";
 
 import protect from "../middleware/authMiddleware.js";
@@ -16,6 +17,9 @@ router.post("/", protect, createJob);
 
 // Get all jobs of logged-in user
 router.get("/", protect, getJobs);
+
+// Get job stats for dashboard
+router.get("/stats", protect, getJobStats);
 
 // Update a job
 router.put("/:id", protect, updateJob);
