@@ -6,6 +6,7 @@ import connectDB from "./config/db.js";
 
 import authRoutes from "./routes/authRoutes.js";
 import jobRoutes from "./routes/jobRoutes.js";
+import aiRoutes from "./routes/aiRoutes.js";
 
 // Load environment variables
 dotenv.config();
@@ -25,6 +26,7 @@ app.get("/", (req, res) => {
 //mounting routes
 app.use("/api/v1/auth", authRoutes); // /v1 - API versioning
 app.use("/api/v1/jobs", jobRoutes);
+app.use("/api/v1/ai", aiRoutes);
 
 // Port
 const PORT = process.env.PORT || 5000;
