@@ -22,6 +22,11 @@ const userSchema = new mongoose.Schema(
             required: true,
             minlength: 6,
         },
+
+        resumeUrl: {
+            type: String,
+            default: null,
+        },
     },
     {
         timestamps: true,
