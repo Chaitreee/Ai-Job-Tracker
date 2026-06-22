@@ -91,6 +91,22 @@ export const getJobs = async (req, res) => {
             sortOption = {
                 createdAt: 1,
             };
+        } else if (sort === "deadline-asc") {
+            sortOption = {
+                deadline: 1,
+            };
+        } else if (sort === "deadline-desc") {
+            sortOption = {
+                deadline: -1,
+            };
+        } else if (sort === "company-asc") {
+            sortOption = {
+                company: 1,
+            };
+        } else if (sort === "company-desc") {
+            sortOption = {
+                company: -1,
+            };
         }
 
         const jobs = await Job.find(query).sort(sortOption);
@@ -250,6 +266,39 @@ export const getJobStats = async (req, res) => {
         });
 
         return res.status(200).json(result);
+
+    } catch (error) {
+
+        console.error(error);
+
+        return res.status(500).json({
+            message: "Internal Server Error",
+        });
+    }
+};
+
+// @desc Get a single job by id
+// @route GET /api/v1/jobs/:id
+export const getJobById = async (req, res) => {
+    try {
+
+        const job = await Job.findById(req.params.id);
+
+        // Check if job exists
+        if (!job) {
+            return res.status(404).json({
+                message: "Job not found",
+            });
+        }
+
+        // Check ownership
+        if (job.user.toString() !== req.user._id.toString()) {
+            return res.status(403).json({
+                message: "You are not authorized to view this job",
+            });
+        }
+
+        return res.status(200).json(job);
 
     } catch (error) {
 

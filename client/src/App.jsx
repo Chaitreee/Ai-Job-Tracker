@@ -3,6 +3,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 import KanbanBoard from './pages/KanbanBoard'
+import JobsList from './pages/JobsList'
 import JobDetail from './pages/JobDetail'
 import AIMatch from './pages/AIMatch'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -27,6 +28,14 @@ function App() {
           element={
             <ProtectedRoute>
               <KanbanBoard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/jobs"
+          element={
+            <ProtectedRoute>
+              <JobsList />
             </ProtectedRoute>
           }
         />

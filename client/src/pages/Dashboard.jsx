@@ -1,27 +1,31 @@
 import { useEffect, useState } from 'react'
 import Navbar from '../components/Navbar'
 import StatsCards from '../components/StatsCards'
-import { getJobStats } from '../api/jobs'
+import DeadlineAlerts from '../components/DeadlineAlerts'
+import Analytics from '../components/Analytics'
+import { getJobStats, getJobs } from '../api/jobs'
 
 function Dashboard() {
   const [stats, setStats] = useState(null)
+  const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchData = async () => {
       try {
-        const res = await getJobStats()
-        setStats(res.data)
+        const [statsRes, jobsRes] = await Promise.all([getJobStats(), getJobs()])
+        setStats(statsRes.data)
+        setJobs(jobsRes.data)
       } catch (err) {
         console.error(err)
-        setError('Could not load dashboard stats.')
+        setError('Could not load dashboard data.')
       } finally {
         setLoading(false)
       }
     }
 
-    fetchStats()
+    fetchData()
   }, [])
 
   return (
@@ -32,7 +36,14 @@ function Dashboard() {
 
         {loading && <p className="text-gray-400">Loading stats...</p>}
         {error && <p className="text-red-400">{error}</p>}
-        {!loading && !error && <StatsCards stats={stats} />}
+
+        {!loading && !error && (
+          <>
+            <DeadlineAlerts jobs={jobs} />
+            <StatsCards stats={stats} />
+            <Analytics jobs={jobs} />
+          </>
+        )}
       </div>
     </div>
   )

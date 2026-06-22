@@ -3,6 +3,7 @@ import express from "express";
 import {
     createJob,
     getJobs,
+    getJobById,
     updateJob,
     deleteJob,
     getJobStats,
@@ -20,6 +21,9 @@ router.get("/", protect, getJobs);
 
 // Get job stats for dashboard
 router.get("/stats", protect, getJobStats);
+
+// Get a single job by id (must come after /stats)
+router.get("/:id", protect, getJobById);
 
 // Update a job
 router.put("/:id", protect, updateJob);

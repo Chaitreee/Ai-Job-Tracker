@@ -36,15 +36,21 @@ export const uploadResume = async (req, res) => {
 
         const result = await uploadBufferToCloudinary(req.file.buffer);
 
+        const originalName = req.file.originalname;
+
         const user = await User.findByIdAndUpdate(
             req.user._id,
-            { resumeUrl: result.secure_url },
+            {
+                resumeUrl: result.secure_url,
+                resumeName: originalName,
+            },
             { new: true }
         );
 
         return res.status(200).json({
             message: "Resume uploaded successfully",
             resumeUrl: user.resumeUrl,
+            resumeName: user.resumeName,
         });
     } catch (error) {
         console.error(error);

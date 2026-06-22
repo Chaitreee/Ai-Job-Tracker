@@ -27,6 +27,11 @@ const userSchema = new mongoose.Schema(
             type: String,
             default: null,
         },
+
+        resumeName: {
+            type: String,
+            default: null,
+        },
     },
     {
         timestamps: true,
