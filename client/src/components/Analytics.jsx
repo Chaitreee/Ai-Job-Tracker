@@ -1,20 +1,10 @@
 import { useMemo } from 'react'
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  CartesianGrid,
-  Legend,
-  PieChart,
-  Pie,
-  Cell,
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  LineChart, Line, CartesianGrid, Legend,
+  PieChart, Pie, Cell,
 } from 'recharts'
-import { format, startOfWeek, addWeeks, subWeeks, isAfter, isBefore, parseISO } from 'date-fns'
+import { format, startOfWeek, addWeeks, isAfter, isBefore } from 'date-fns'
 
 const STATUS_COLORS = {
   Applied: '#60a5fa',
@@ -23,10 +13,8 @@ const STATUS_COLORS = {
   Offer: '#34d399',
   Rejected: '#f87171',
 }
-
 const STATUSES = ['Applied', 'OA', 'Interview', 'Offer', 'Rejected']
 
-// Shared dark tooltip style
 const darkTooltip = {
   contentStyle: {
     backgroundColor: '#1e293b',
@@ -39,39 +27,36 @@ const darkTooltip = {
   cursor: { fill: 'rgba(255,255,255,0.04)' },
 }
 
-// ── Applications per Week ─────────────────────────────────────────────────────
+function getWeekBuckets(jobs) {
+  if (!jobs.length) return []
+  const earliest = jobs.reduce((min, j) => {
+    const d = new Date(j.createdAt)
+    return d < min ? d : min
+  }, new Date())
+  const weekStart = startOfWeek(earliest, { weekStartsOn: 1 })
+  const today = new Date()
+  const weeks = []
+  let cursor = weekStart
+  while (!isAfter(cursor, today)) {
+    weeks.push(cursor)
+    cursor = addWeeks(cursor, 1)
+  }
+  return weeks.slice(-12)
+}
+
 function AppsPerWeek({ jobs }) {
   const data = useMemo(() => {
-    if (!jobs.length) return []
-
-    // Find the earliest job date and go up to today
-    const earliest = jobs.reduce((min, j) => {
-      const d = new Date(j.createdAt)
-      return d < min ? d : min
-    }, new Date())
-
-    const weekStart = startOfWeek(earliest, { weekStartsOn: 1 })
-    const today = new Date()
-    const weeks = []
-
-    let cursor = weekStart
-    while (!isAfter(cursor, today)) {
+    const weeks = getWeekBuckets(jobs)
+    return weeks.map((cursor) => {
       const weekEnd = addWeeks(cursor, 1)
-      const count = jobs.filter((j) => {
-        const d = new Date(j.createdAt)
-        return !isBefore(d, cursor) && isBefore(d, weekEnd)
-      }).length
-
-      weeks.push({
+      return {
         week: format(cursor, 'MMM d'),
-        Applications: count,
-      })
-
-      cursor = weekEnd
-    }
-
-    // Keep only last 12 weeks to avoid a massive chart
-    return weeks.slice(-12)
+        Applications: jobs.filter((j) => {
+          const d = new Date(j.createdAt)
+          return !isBefore(d, cursor) && isBefore(d, weekEnd)
+        }).length,
+      }
+    })
   }, [jobs])
 
   if (!data.length) return <EmptyChart message="No application data yet." />
@@ -91,43 +76,21 @@ function AppsPerWeek({ jobs }) {
   )
 }
 
-// ── Progress Over Time (cumulative status counts by week) ─────────────────────
 function ProgressOverTime({ jobs }) {
   const data = useMemo(() => {
-    if (!jobs.length) return []
-
-    const earliest = jobs.reduce((min, j) => {
-      const d = new Date(j.createdAt)
-      return d < min ? d : min
-    }, new Date())
-
-    const weekStart = startOfWeek(earliest, { weekStartsOn: 1 })
-    const today = new Date()
-    const weeks = []
-
-    let cursor = weekStart
-    while (!isAfter(cursor, today)) {
+    const weeks = getWeekBuckets(jobs)
+    return weeks.map((cursor) => {
       const weekEnd = addWeeks(cursor, 1)
       const point = { week: format(cursor, 'MMM d') }
-
       STATUSES.forEach((s) => {
-        // Cumulative: count all jobs with this status applied before end of this week
-        point[s] = jobs.filter((j) => {
-          const d = new Date(j.createdAt)
-          return j.status === s && isBefore(d, weekEnd)
-        }).length
+        point[s] = jobs.filter((j) => j.status === s && isBefore(new Date(j.createdAt), weekEnd)).length
       })
-
-      weeks.push(point)
-      cursor = weekEnd
-    }
-
-    return weeks.slice(-12)
+      return point
+    })
   }, [jobs])
 
   if (!data.length) return <EmptyChart message="No progress data yet." />
 
-  // Only show statuses that have at least one non-zero value
   const activeStatuses = STATUSES.filter((s) => data.some((d) => d[s] > 0))
 
   return (
@@ -143,15 +106,7 @@ function ProgressOverTime({ jobs }) {
             formatter={(val) => <span style={{ color: '#94a3b8' }}>{val}</span>}
           />
           {activeStatuses.map((s) => (
-            <Line
-              key={s}
-              type="monotone"
-              dataKey={s}
-              stroke={STATUS_COLORS[s]}
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 4 }}
-            />
+            <Line key={s} type="monotone" dataKey={s} stroke={STATUS_COLORS[s]} strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
           ))}
         </LineChart>
       </ResponsiveContainer>
@@ -159,14 +114,11 @@ function ProgressOverTime({ jobs }) {
   )
 }
 
-// ── Stage Distribution (donut) ────────────────────────────────────────────────
 function StageDistribution({ jobs }) {
-  const data = useMemo(() => {
-    return STATUSES.map((s) => ({
-      name: s,
-      value: jobs.filter((j) => j.status === s).length,
-    })).filter((d) => d.value > 0)
-  }, [jobs])
+  const data = useMemo(() =>
+    STATUSES.map((s) => ({ name: s, value: jobs.filter((j) => j.status === s).length })).filter((d) => d.value > 0),
+    [jobs]
+  )
 
   if (!data.length) return <EmptyChart message="No stage data yet." />
 
@@ -174,17 +126,8 @@ function StageDistribution({ jobs }) {
     <ChartCard title="Stage Distribution">
       <ResponsiveContainer width="100%" height={220}>
         <PieChart>
-          <Pie
-            data={data}
-            dataKey="value"
-            nameKey="name"
-            innerRadius={60}
-            outerRadius={90}
-            paddingAngle={2}
-          >
-            {data.map((entry) => (
-              <Cell key={entry.name} fill={STATUS_COLORS[entry.name]} />
-            ))}
+          <Pie data={data} dataKey="value" nameKey="name" innerRadius={60} outerRadius={90} paddingAngle={2}>
+            {data.map((entry) => <Cell key={entry.name} fill={STATUS_COLORS[entry.name]} />)}
           </Pie>
           <Tooltip {...darkTooltip} />
           <Legend
@@ -197,11 +140,10 @@ function StageDistribution({ jobs }) {
   )
 }
 
-// ── Shared wrappers ───────────────────────────────────────────────────────────
 function ChartCard({ title, children }) {
   return (
-    <div className="bg-slate-800 rounded-xl p-5">
-      <h3 className="text-sm font-medium text-gray-400 mb-4">{title}</h3>
+    <div className="bg-white dark:bg-slate-800 rounded-xl p-5 border border-slate-200 dark:border-transparent shadow-sm">
+      <h3 className="text-sm font-medium text-slate-500 dark:text-gray-400 mb-4">{title}</h3>
       {children}
     </div>
   )
@@ -209,20 +151,19 @@ function ChartCard({ title, children }) {
 
 function EmptyChart({ message }) {
   return (
-    <div className="bg-slate-800 rounded-xl p-5 flex items-center justify-center h-36">
-      <p className="text-gray-500 text-sm">{message}</p>
+    <div className="bg-white dark:bg-slate-800 rounded-xl p-5 flex items-center justify-center h-36 border border-slate-200 dark:border-transparent">
+      <p className="text-slate-400 dark:text-gray-500 text-sm">{message}</p>
     </div>
   )
 }
 
-// ── Main export ───────────────────────────────────────────────────────────────
 export default function Analytics({ jobs }) {
   if (!jobs || jobs.length === 0) {
     return (
       <div className="mt-8">
-        <h2 className="text-lg font-semibold mb-4">Analytics</h2>
-        <div className="bg-slate-800 rounded-xl p-8 text-center">
-          <p className="text-gray-500 text-sm">Add some job applications to see analytics.</p>
+        <h2 className="text-lg font-semibold mb-4 text-slate-800 dark:text-white">Analytics</h2>
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-8 text-center border border-slate-200 dark:border-transparent shadow-sm">
+          <p className="text-slate-400 dark:text-gray-500 text-sm">Add some job applications to see analytics.</p>
         </div>
       </div>
     )
@@ -230,7 +171,7 @@ export default function Analytics({ jobs }) {
 
   return (
     <div className="mt-8">
-      <h2 className="text-lg font-semibold mb-4">Analytics</h2>
+      <h2 className="text-lg font-semibold mb-4 text-slate-800 dark:text-white">Analytics</h2>
       <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
         <AppsPerWeek jobs={jobs} />
         <ProgressOverTime jobs={jobs} />

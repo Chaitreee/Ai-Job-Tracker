@@ -3,6 +3,7 @@ import { DragDropContext } from '@hello-pangea/dnd'
 import Navbar from '../components/Navbar'
 import KanbanColumn from '../components/KanbanColumn'
 import JobModal from '../components/JobModal'
+import { KanbanSkeleton } from '../components/Skeleton'
 import { getJobs, updateJob } from '../api/jobs'
 
 const STATUSES = ['Applied', 'OA', 'Interview', 'Offer', 'Rejected']
@@ -47,24 +48,18 @@ function KanbanBoard() {
 
   const handleDragEnd = async (result) => {
     const { source, destination, draggableId } = result
-
-    // Dropped outside any column, or back in same spot
     if (!destination) return
-    if (source.droppableId === destination.droppableId && source.index === destination.index) {
-      return
-    }
+    if (source.droppableId === destination.droppableId && source.index === destination.index) return
 
     const newStatus = destination.droppableId
     const previousJobs = jobs
 
-    // Optimistic update
     setJobs((prev) =>
       prev.map((job) => (job._id === draggableId ? { ...job, status: newStatus } : job))
     )
 
     try {
       const res = await updateJob(draggableId, { status: newStatus })
-      // Sync with server response (timeline gets updated server-side)
       setJobs((prev) => prev.map((job) => (job._id === draggableId ? res.data : job)))
     } catch (err) {
       console.error(err)
@@ -76,23 +71,24 @@ function KanbanBoard() {
   const jobsByStatus = (status) => jobs.filter((job) => job.status === status)
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white transition-colors">
       <Navbar onAddJobClick={handleAddClick} />
-      <div className="p-8">
+      <div className="p-6 md:p-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-semibold">Kanban Board</h1>
           <button
             onClick={handleAddClick}
-            className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium"
+            className="text-sm px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium transition-colors"
           >
             + Add Job
           </button>
         </div>
 
-        {loading && <p className="text-gray-400">Loading jobs...</p>}
-        {error && <p className="text-red-400 mb-4">{error}</p>}
+        {error && <p className="text-red-500 dark:text-red-400 mb-4">{error}</p>}
 
-        {!loading && (
+        {loading ? (
+          <KanbanSkeleton />
+        ) : (
           <DragDropContext onDragEnd={handleDragEnd}>
             <div className="flex gap-4 overflow-x-auto pb-4">
               {STATUSES.map((status) => (

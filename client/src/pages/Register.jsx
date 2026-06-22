@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import axiosInstance from '../utils/axiosInstance'
+import { useTheme } from '../context/ThemeContext'
 
 function Register() {
   const [name, setName] = useState('')
@@ -10,34 +11,23 @@ function Register() {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
+  const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
 
   const validate = () => {
-    if (password !== confirmPassword) {
-      return 'Passwords do not match'
-    }
-    if (password.length < 6) {
-      return 'Password must be at least 6 characters'
-    }
+    if (password !== confirmPassword) return 'Passwords do not match'
+    if (password.length < 6) return 'Password must be at least 6 characters'
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      return 'Please enter a valid email address'
-    }
+    if (!emailRegex.test(email)) return 'Please enter a valid email address'
     return ''
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
-
     const validationError = validate()
-    if (validationError) {
-      setError(validationError)
-      return
-    }
-
+    if (validationError) { setError(validationError); return }
     setIsLoading(true)
-
     try {
       await axiosInstance.post('/auth/register', { name, email, password })
       navigate('/login')
@@ -49,75 +39,62 @@ function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center p-4">
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white flex items-center justify-center p-4 transition-colors">
+      {/* Theme toggle top-right */}
+      <button
+        onClick={toggleTheme}
+        className="fixed top-4 right-4 w-9 h-9 flex items-center justify-center rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors"
+        title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+        aria-label="Toggle theme"
+      >
+        {theme === 'dark' ? '☀️' : '🌙'}
+      </button>
+
       <form
         onSubmit={handleSubmit}
-        className="bg-slate-800 p-8 rounded-lg w-full max-w-md space-y-4"
+        className="bg-white dark:bg-slate-800 p-8 rounded-xl w-full max-w-md space-y-4 shadow-sm border border-slate-200 dark:border-transparent"
       >
-        <h1 className="text-2xl font-bold mb-2">Create an account</h1>
+        <div className="text-center mb-2">
+          <h1 className="text-2xl font-bold">JobTracker</h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Create your account</p>
+        </div>
 
         {error && (
-          <div className="bg-red-900/50 text-red-300 p-3 rounded text-sm">
+          <div className="bg-red-50 dark:bg-red-900/50 text-red-600 dark:text-red-300 p-3 rounded-lg text-sm border border-red-200 dark:border-red-800">
             {error}
           </div>
         )}
 
-        <div>
-          <label className="block text-sm mb-1">Name</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            className="w-full bg-slate-700 rounded p-2 outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm mb-1">Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full bg-slate-700 rounded p-2 outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm mb-1">Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full bg-slate-700 rounded p-2 outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm mb-1">Confirm Password</label>
-          <input
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-            className="w-full bg-slate-700 rounded p-2 outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+        {[
+          { label: 'Name', value: name, setter: setName, type: 'text' },
+          { label: 'Email', value: email, setter: setEmail, type: 'email' },
+          { label: 'Password', value: password, setter: setPassword, type: 'password' },
+          { label: 'Confirm Password', value: confirmPassword, setter: setConfirmPassword, type: 'password' },
+        ].map(({ label, value, setter, type }) => (
+          <div key={label}>
+            <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">{label}</label>
+            <input
+              type={type}
+              value={value}
+              onChange={(e) => setter(e.target.value)}
+              required
+              className="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        ))}
 
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded p-2 font-semibold"
+          className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg p-2.5 font-semibold text-white transition-colors"
         >
-          {isLoading ? 'Creating account...' : 'Register'}
+          {isLoading ? 'Creating account...' : 'Create Account'}
         </button>
 
-        <p className="text-sm text-center text-slate-400">
+        <p className="text-sm text-center text-slate-500 dark:text-slate-400">
           Already have an account?{' '}
-          <Link to="/login" className="text-blue-400 hover:underline">
-            Login
+          <Link to="/login" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">
+            Sign In
           </Link>
         </p>
       </form>

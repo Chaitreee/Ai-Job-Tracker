@@ -10,19 +10,19 @@ function AnimatedScore({ score }) {
     let frame
     const duration = 800
     const start = performance.now()
-
     const tick = (now) => {
       const progress = Math.min((now - start) / duration, 1)
       setDisplayed(Math.round(progress * score))
       if (progress < 1) frame = requestAnimationFrame(tick)
     }
-
     frame = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(frame)
   }, [score])
 
   const color =
-    score >= 75 ? 'text-green-400' : score >= 50 ? 'text-amber-400' : 'text-red-400'
+    score >= 75 ? 'text-green-500 dark:text-green-400'
+    : score >= 50 ? 'text-amber-500 dark:text-amber-400'
+    : 'text-red-500 dark:text-red-400'
 
   return <span className={`text-5xl font-bold ${color}`}>{displayed}%</span>
 }
@@ -53,24 +53,20 @@ function AIMatch() {
         setCheckingResume(false)
       }
     }
-
     checkResume()
   }, [])
 
   const handleFileChange = async (e) => {
     const file = e.target.files[0]
     if (!file) return
-
     if (file.type !== 'application/pdf') {
       setUploadError('Only PDF files are allowed.')
       setInvalidFileSelected(true)
       return
     }
-
     setInvalidFileSelected(false)
     setUploading(true)
     setUploadError('')
-
     try {
       const res = await uploadResume(file)
       setResumeUrl(res.data.resumeUrl)
@@ -88,41 +84,38 @@ function AIMatch() {
       setAnalyzeError('Please paste a job description.')
       return
     }
-
     setAnalyzing(true)
     setAnalyzeError('')
     setResult(null)
-
     try {
       const res = await matchResume(jobDescription.trim())
       setResult(res.data)
     } catch (err) {
       console.error(err)
-      setAnalyzeError(
-        err.response?.data?.message || 'Something went wrong analyzing your resume.'
-      )
+      setAnalyzeError(err.response?.data?.message || 'Something went wrong analyzing your resume.')
     } finally {
       setAnalyzing(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white transition-colors">
       <Navbar />
-      <div className="p-8 max-w-5xl mx-auto">
-        <h1 className="text-2xl font-semibold mb-6">AI Resume Match</h1>
+      <div className="p-6 md:p-8 max-w-5xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold">AI Resume Match</h1>
+        </div>
 
         <div className="grid md:grid-cols-2 gap-6 mb-8">
-          {/* Left: Resume upload */}
-          <div className="bg-slate-800 rounded-xl p-6">
-            <h3 className="font-medium mb-3">1. Your Resume</h3>
-
+          {/* Resume upload */}
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-transparent shadow-sm">
+            <h3 className="font-medium mb-3 text-slate-700 dark:text-white">1. Your Resume</h3>
             {checkingResume ? (
-              <p className="text-gray-400 text-sm">Checking...</p>
+              <p className="text-slate-400 text-sm">Checking...</p>
             ) : (
               <>
                 {resumeUrl && resumeName && (
-                  <div className="flex items-center gap-2 mb-3 text-sm text-green-400">
+                  <div className="flex items-center gap-2 mb-3 text-sm text-green-600 dark:text-green-400">
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                       <polyline points="14 2 14 8 20 8"/>
@@ -131,7 +124,6 @@ function AIMatch() {
                     <span className="truncate" title={resumeName}>{resumeName}</span>
                   </div>
                 )}
-
                 <label className="block">
                   <span className="sr-only">Upload resume</span>
                   <input
@@ -139,15 +131,13 @@ function AIMatch() {
                     accept="application/pdf"
                     onChange={handleFileChange}
                     disabled={uploading}
-                    className="block w-full text-sm text-gray-300 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-600 file:text-white file:hover:bg-blue-500 file:cursor-pointer cursor-pointer"
+                    className="block w-full text-sm text-slate-500 dark:text-gray-300 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-600 file:text-white file:hover:bg-blue-500 file:cursor-pointer cursor-pointer"
                   />
                 </label>
-
-                {uploading && <p className="text-gray-400 text-sm mt-2">Uploading...</p>}
-                {uploadError && <p className="text-red-400 text-sm mt-2">{uploadError}</p>}
-
+                {uploading && <p className="text-slate-400 text-sm mt-2">Uploading...</p>}
+                {uploadError && <p className="text-red-500 dark:text-red-400 text-sm mt-2">{uploadError}</p>}
                 {resumeUrl && (
-                  <p className="text-xs text-gray-500 mt-3">
+                  <p className="text-xs text-slate-400 dark:text-gray-500 mt-3">
                     Uploading a new file will replace your current resume.
                   </p>
                 )}
@@ -155,15 +145,15 @@ function AIMatch() {
             )}
           </div>
 
-          {/* Right: Job description */}
-          <div className="bg-slate-800 rounded-xl p-6">
-            <h3 className="font-medium mb-3">2. Job Description</h3>
+          {/* Job description */}
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 border border-slate-200 dark:border-transparent shadow-sm">
+            <h3 className="font-medium mb-3 text-slate-700 dark:text-white">2. Job Description</h3>
             <textarea
               value={jobDescription}
               onChange={(e) => setJobDescription(e.target.value)}
               rows={8}
               placeholder="Paste the job description here..."
-              className="w-full px-3 py-2 rounded-lg bg-slate-700 text-white border border-slate-600 focus:outline-none focus:border-blue-500 text-sm"
+              className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-600 focus:outline-none focus:border-blue-500 text-sm"
             />
           </div>
         </div>
@@ -179,88 +169,62 @@ function AIMatch() {
         </div>
 
         {!resumeUrl && !checkingResume && (
-          <p className="text-center text-gray-500 text-sm mb-4">
-            Upload a resume before analyzing.
-          </p>
+          <p className="text-center text-slate-400 dark:text-gray-500 text-sm mb-4">Upload a resume before analyzing.</p>
         )}
-
         {resumeUrl && invalidFileSelected && (
-          <p className="text-center text-amber-400 text-sm mb-4">
+          <p className="text-center text-amber-500 dark:text-amber-400 text-sm mb-4">
             The selected file is not a PDF. Please choose a valid PDF to replace your current resume.
           </p>
         )}
-
         {analyzeError && (
-          <p className="text-center text-red-400 text-sm mb-4">{analyzeError}</p>
+          <p className="text-center text-red-500 dark:text-red-400 text-sm mb-4">{analyzeError}</p>
         )}
-
         {analyzing && (
           <div className="flex justify-center">
-            <div className="w-8 h-8 border-2 border-slate-600 border-t-blue-500 rounded-full animate-spin" />
+            <div className="w-8 h-8 border-2 border-slate-300 dark:border-slate-600 border-t-blue-500 rounded-full animate-spin" />
           </div>
         )}
 
         {result && !result.isResume && (
-          <div className="bg-slate-800 rounded-xl p-6 text-center">
-            <p className="text-amber-400 font-medium mb-2">
-              This doesn't look like a valid resume.
-            </p>
-            <p className="text-gray-400 text-sm">
-              Please upload a proper resume PDF and try again.
-            </p>
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 text-center border border-slate-200 dark:border-transparent shadow-sm">
+            <p className="text-amber-500 dark:text-amber-400 font-medium mb-2">This doesn't look like a valid resume.</p>
+            <p className="text-slate-500 dark:text-gray-400 text-sm">Please upload a proper resume PDF and try again.</p>
           </div>
         )}
 
         {result && result.isResume && (
-          <div className="bg-slate-800 rounded-xl p-6 flex flex-col gap-6">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 flex flex-col gap-6 border border-slate-200 dark:border-transparent shadow-sm">
             <div className="flex flex-col items-center">
               <AnimatedScore score={result.matchPercentage} />
-              <p className="text-gray-400 text-sm mt-1">Match Score</p>
+              <p className="text-slate-500 dark:text-gray-400 text-sm mt-1">Match Score</p>
             </div>
 
             {result.summary && (
-              <p className="text-gray-300 text-sm text-center max-w-2xl mx-auto">
-                {result.summary}
-              </p>
+              <p className="text-slate-600 dark:text-gray-300 text-sm text-center max-w-2xl mx-auto">{result.summary}</p>
             )}
 
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <h4 className="text-sm font-medium text-gray-300 mb-2">
-                  Strengths
-                </h4>
+                <h4 className="text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Strengths</h4>
                 <div className="flex flex-wrap gap-2">
                   {result.strengths?.length > 0 ? (
                     result.strengths.map((skill, i) => (
-                      <span
-                        key={i}
-                        className="text-xs bg-green-500/20 text-green-300 px-3 py-1 rounded-full"
-                      >
-                        {skill}
-                      </span>
+                      <span key={i} className="text-xs bg-green-500/20 text-green-700 dark:text-green-300 px-3 py-1 rounded-full">{skill}</span>
                     ))
                   ) : (
-                    <p className="text-gray-500 text-sm">None listed.</p>
+                    <p className="text-slate-400 text-sm">None listed.</p>
                   )}
                 </div>
               </div>
-
               <div>
-                <h4 className="text-sm font-medium text-gray-300 mb-2">
-                  Missing Skills
-                </h4>
+                <h4 className="text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Missing Skills</h4>
                 <div className="flex flex-wrap gap-2">
                   {result.missingSkills?.length > 0 ? (
                     result.missingSkills.map((skill, i) => (
-                      <span
-                        key={i}
-                        className="text-xs bg-red-500/20 text-red-300 px-3 py-1 rounded-full"
-                      >
-                        {skill}
-                      </span>
+                      <span key={i} className="text-xs bg-red-500/20 text-red-700 dark:text-red-300 px-3 py-1 rounded-full">{skill}</span>
                     ))
                   ) : (
-                    <p className="text-gray-500 text-sm">None listed.</p>
+                    <p className="text-slate-400 text-sm">None listed.</p>
                   )}
                 </div>
               </div>
@@ -268,13 +232,9 @@ function AIMatch() {
 
             {result.suggestions?.length > 0 && (
               <div>
-                <h4 className="text-sm font-medium text-gray-300 mb-2">
-                  Suggestions
-                </h4>
-                <ul className="list-disc list-inside text-sm text-gray-300 flex flex-col gap-1">
-                  {result.suggestions.map((tip, i) => (
-                    <li key={i}>{tip}</li>
-                  ))}
+                <h4 className="text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Suggestions</h4>
+                <ul className="list-disc list-inside text-sm text-slate-600 dark:text-gray-300 flex flex-col gap-1">
+                  {result.suggestions.map((tip, i) => <li key={i}>{tip}</li>)}
                 </ul>
               </div>
             )}
