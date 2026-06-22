@@ -4,19 +4,21 @@ import Navbar from '../components/Navbar'
 import Timeline from '../components/Timeline'
 import JobModal from '../components/JobModal'
 import { JobDetailSkeleton } from '../components/Skeleton'
+import { useToast } from '../context/ToastContext'
 import { getJobById, updateJob } from '../api/jobs'
 
-const STATUS_BADGE_COLORS = {
-  Applied: 'bg-blue-500/20 text-blue-600 dark:text-blue-300',
-  OA: 'bg-amber-500/20 text-amber-600 dark:text-amber-300',
-  Interview: 'bg-violet-500/20 text-violet-600 dark:text-violet-300',
-  Offer: 'bg-green-500/20 text-green-600 dark:text-green-300',
-  Rejected: 'bg-red-500/20 text-red-600 dark:text-red-300',
+const STATUS_BADGE = {
+  Applied:   'bg-blue-500/15 border-blue-400/40 text-blue-700 dark:text-blue-300',
+  OA:        'bg-amber-500/15 border-amber-400/40 text-amber-700 dark:text-amber-300',
+  Interview: 'bg-violet-500/15 border-violet-400/40 text-violet-700 dark:text-violet-300',
+  Offer:     'bg-green-500/15 border-green-400/40 text-green-700 dark:text-green-300',
+  Rejected:  'bg-red-500/15 border-red-400/40 text-red-700 dark:text-red-300',
 }
 
 function JobDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { addToast } = useToast()
 
   const [job, setJob] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -27,9 +29,7 @@ function JobDetail() {
   const [savingJournal, setSavingJournal] = useState(false)
   const [journalSaved, setJournalSaved] = useState(false)
 
-  useEffect(() => {
-    fetchJob()
-  }, [id])
+  useEffect(() => { fetchJob() }, [id])
 
   const fetchJob = async () => {
     try {
@@ -52,10 +52,11 @@ function JobDetail() {
       const res = await updateJob(id, { interviewExperience: journalText })
       setJob(res.data)
       setJournalSaved(true)
+      addToast('Journal saved.', 'success')
       setTimeout(() => setJournalSaved(false), 2000)
     } catch (err) {
       console.error(err)
-      setError('Could not save journal entry.')
+      addToast('Could not save journal.', 'error')
     } finally {
       setSavingJournal(false)
     }
@@ -66,9 +67,7 @@ function JobDetail() {
       <Navbar />
       <div className="p-6 md:p-8">
         {loading ? (
-          <div className="p-2">
-            <JobDetailSkeleton />
-          </div>
+          <JobDetailSkeleton />
         ) : error || !job ? (
           <div className="max-w-3xl mx-auto">
             <p className="text-red-500 dark:text-red-400 mb-4">{error || 'Job not found.'}</p>
@@ -82,35 +81,37 @@ function JobDetail() {
             <div className="bg-white dark:bg-slate-800 rounded-xl p-6 mb-6 border border-slate-200 dark:border-transparent shadow-sm">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">{job.company}</h1>
-                  <p className="text-slate-500 dark:text-gray-400">{job.role}</p>
+                  <h1 className="text-2xl font-semibold">{job.company}</h1>
+                  <p className="text-slate-500 dark:text-gray-400 mt-0.5">{job.role}</p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className={`text-xs font-medium px-3 py-1 rounded-full ${STATUS_BADGE_COLORS[job.status] || 'bg-slate-200 dark:bg-slate-700'}`}>
+                  <span className={`text-xs font-medium px-3 py-1 rounded-full border ${STATUS_BADGE[job.status] || 'bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-600 dark:text-gray-300'}`}>
                     {job.status}
                   </span>
                   <button
                     onClick={() => setModalOpen(true)}
-                    className="text-sm px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors"
+                    className="text-sm px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 transition-colors"
                   >
                     Edit
                   </button>
                 </div>
               </div>
 
-              <div className="mt-4 flex flex-col gap-1 text-sm text-slate-600 dark:text-gray-300">
+              <div className="mt-4 flex flex-col gap-1.5 text-sm text-slate-600 dark:text-gray-300">
                 {job.jobLink && (
                   <a href={job.jobLink} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline break-all">
                     {job.jobLink}
                   </a>
                 )}
                 {job.deadline && (
-                  <p>Deadline: {new Date(job.deadline).toLocaleDateString()}</p>
+                  <p className="text-slate-500 dark:text-gray-400">
+                    Deadline: <span className="font-medium">{new Date(job.deadline).toLocaleDateString()}</span>
+                  </p>
                 )}
               </div>
 
               {job.notes && (
-                <div className="mt-4">
+                <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
                   <h3 className="text-sm font-medium text-slate-600 dark:text-gray-300 mb-1">Notes</h3>
                   <p className="text-slate-500 dark:text-gray-400 text-sm whitespace-pre-wrap">{job.notes}</p>
                 </div>
@@ -119,10 +120,11 @@ function JobDetail() {
 
             {/* Journal */}
             <div className="bg-white dark:bg-slate-800 rounded-xl p-6 mb-6 border border-slate-200 dark:border-transparent shadow-sm">
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-medium text-slate-700 dark:text-gray-300">Interview Experience Journal</h3>
-                {savingJournal && <span className="text-xs text-slate-400">Saving...</span>}
-                {journalSaved && <span className="text-xs text-green-500 dark:text-green-400">Saved ✓</span>}
+                <span className="text-xs text-slate-400 dark:text-slate-500 h-4">
+                  {savingJournal ? 'Saving...' : journalSaved ? '✓ Saved' : 'Auto-saves on blur'}
+                </span>
               </div>
               <textarea
                 value={journalText}
@@ -130,7 +132,7 @@ function JobDetail() {
                 onBlur={handleJournalBlur}
                 rows={5}
                 placeholder="Write notes from your interview rounds here..."
-                className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-600 focus:outline-none focus:border-blue-500"
+                className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-600 focus:outline-none focus:border-blue-500 text-sm resize-none"
               />
             </div>
 
@@ -149,6 +151,7 @@ function JobDetail() {
           onClose={() => setModalOpen(false)}
           onSuccess={fetchJob}
           jobToEdit={job}
+          onToast={addToast}
         />
       )}
     </div>

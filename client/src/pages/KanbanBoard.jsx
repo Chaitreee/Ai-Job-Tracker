@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar'
 import KanbanColumn from '../components/KanbanColumn'
 import JobModal from '../components/JobModal'
 import { KanbanSkeleton } from '../components/Skeleton'
+import { useToast } from '../context/ToastContext'
 import { getJobs, updateJob } from '../api/jobs'
 
 const STATUSES = ['Applied', 'OA', 'Interview', 'Offer', 'Rejected']
@@ -14,10 +15,9 @@ function KanbanBoard() {
   const [error, setError] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [jobToEdit, setJobToEdit] = useState(null)
+  const { addToast } = useToast()
 
-  useEffect(() => {
-    fetchJobs()
-  }, [])
+  useEffect(() => { fetchJobs() }, [])
 
   const fetchJobs = async () => {
     try {
@@ -32,20 +32,6 @@ function KanbanBoard() {
     }
   }
 
-  const handleEditClick = (job) => {
-    setJobToEdit(job)
-    setModalOpen(true)
-  }
-
-  const handleAddClick = () => {
-    setJobToEdit(null)
-    setModalOpen(true)
-  }
-
-  const handleModalSuccess = () => {
-    fetchJobs()
-  }
-
   const handleDragEnd = async (result) => {
     const { source, destination, draggableId } = result
     if (!destination) return
@@ -54,31 +40,30 @@ function KanbanBoard() {
     const newStatus = destination.droppableId
     const previousJobs = jobs
 
-    setJobs((prev) =>
-      prev.map((job) => (job._id === draggableId ? { ...job, status: newStatus } : job))
-    )
+    setJobs((prev) => prev.map((j) => j._id === draggableId ? { ...j, status: newStatus } : j))
 
     try {
       const res = await updateJob(draggableId, { status: newStatus })
-      setJobs((prev) => prev.map((job) => (job._id === draggableId ? res.data : job)))
+      setJobs((prev) => prev.map((j) => j._id === draggableId ? res.data : j))
+      addToast(`Moved to ${newStatus}`, 'success')
     } catch (err) {
       console.error(err)
-      setError('Failed to update job status. Reverted.')
+      addToast('Failed to update job status.', 'error')
       setJobs(previousJobs)
     }
   }
 
-  const jobsByStatus = (status) => jobs.filter((job) => job.status === status)
+  const jobsByStatus = (status) => jobs.filter((j) => j.status === status)
 
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white transition-colors">
-      <Navbar onAddJobClick={handleAddClick} />
+      <Navbar />
       <div className="p-6 md:p-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-semibold">Kanban Board</h1>
           <button
-            onClick={handleAddClick}
-            className="text-sm px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium transition-colors"
+            onClick={() => { setJobToEdit(null); setModalOpen(true) }}
+            className="text-sm px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
           >
             + Add Job
           </button>
@@ -88,6 +73,18 @@ function KanbanBoard() {
 
         {loading ? (
           <KanbanSkeleton />
+        ) : jobs.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="text-6xl mb-4">🗂️</div>
+            <h2 className="text-xl font-semibold text-slate-700 dark:text-slate-200 mb-2">Your board is empty</h2>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">Add a job to start organizing your applications.</p>
+            <button
+              onClick={() => { setJobToEdit(null); setModalOpen(true) }}
+              className="px-6 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
+            >
+              + Add your first job
+            </button>
+          </div>
         ) : (
           <DragDropContext onDragEnd={handleDragEnd}>
             <div className="flex gap-4 overflow-x-auto pb-4">
@@ -96,7 +93,7 @@ function KanbanBoard() {
                   key={status}
                   status={status}
                   jobs={jobsByStatus(status)}
-                  onEditClick={handleEditClick}
+                  onEditClick={(job) => { setJobToEdit(job); setModalOpen(true) }}
                 />
               ))}
             </div>
@@ -107,8 +104,9 @@ function KanbanBoard() {
       <JobModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        onSuccess={handleModalSuccess}
+        onSuccess={fetchJobs}
         jobToEdit={jobToEdit}
+        onToast={addToast}
       />
     </div>
   )

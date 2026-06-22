@@ -16,7 +16,7 @@ const emptyForm = {
 
 const inputCls = 'w-full mt-1 px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-600 focus:outline-none focus:border-blue-500 text-sm'
 
-export default function JobModal({ isOpen, onClose, onSuccess, jobToEdit }) {
+export default function JobModal({ isOpen, onClose, onSuccess, jobToEdit, onToast }) {
   const [form, setForm] = useState(emptyForm)
   const [submitting, setSubmitting] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -52,14 +52,18 @@ export default function JobModal({ isOpen, onClose, onSuccess, jobToEdit }) {
     try {
       if (isEditMode) {
         await updateJob(jobToEdit._id, form)
+        onToast?.('Job updated successfully.', 'success')
       } else {
         await createJob(form)
+        onToast?.('Job added successfully.', 'success')
       }
       onSuccess()
       onClose()
     } catch (err) {
       console.error(err)
-      setError('Something went wrong. Please try again.')
+      const msg = 'Something went wrong. Please try again.'
+      setError(msg)
+      onToast?.(msg, 'error')
     } finally {
       setSubmitting(false)
     }
@@ -70,11 +74,14 @@ export default function JobModal({ isOpen, onClose, onSuccess, jobToEdit }) {
     setDeleting(true)
     try {
       await deleteJob(jobToEdit._id)
+      onToast?.('Job deleted.', 'info')
       onSuccess()
       onClose()
     } catch (err) {
       console.error(err)
-      setError('Could not delete job.')
+      const msg = 'Could not delete job.'
+      setError(msg)
+      onToast?.(msg, 'error')
     } finally {
       setDeleting(false)
     }
@@ -133,7 +140,7 @@ export default function JobModal({ isOpen, onClose, onSuccess, jobToEdit }) {
                 type="button"
                 onClick={handleDelete}
                 disabled={deleting}
-                className="px-3 py-2 rounded-lg text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-sm disabled:opacity-50"
+                className="px-3 py-2 rounded-lg text-sm border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/40 disabled:opacity-50 transition-colors"
               >
                 {deleting ? 'Deleting...' : 'Delete'}
               </button>
@@ -143,14 +150,14 @@ export default function JobModal({ isOpen, onClose, onSuccess, jobToEdit }) {
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 rounded-lg text-slate-500 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-slate-700 text-sm"
+                className="px-4 py-2 rounded-lg text-sm border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submitting}
-                className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm disabled:opacity-50"
+                className="px-4 py-2 rounded-lg text-sm bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 transition-colors"
               >
                 {submitting ? 'Saving...' : isEditMode ? 'Save Changes' : 'Add Job'}
               </button>

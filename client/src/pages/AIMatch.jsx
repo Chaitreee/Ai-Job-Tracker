@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import Navbar from '../components/Navbar'
+import { useToast } from '../context/ToastContext'
 import { getMe } from '../api/auth'
 import { uploadResume, matchResume } from '../api/ai'
 
@@ -20,14 +21,15 @@ function AnimatedScore({ score }) {
   }, [score])
 
   const color =
-    score >= 75 ? 'text-green-500 dark:text-green-400'
-    : score >= 50 ? 'text-amber-500 dark:text-amber-400'
-    : 'text-red-500 dark:text-red-400'
+    score >= 75 ? 'text-green-600 dark:text-green-400'
+    : score >= 50 ? 'text-amber-600 dark:text-amber-400'
+    : 'text-red-600 dark:text-red-400'
 
-  return <span className={`text-5xl font-bold ${color}`}>{displayed}%</span>
+  return <span className={`text-6xl font-bold tabular-nums ${color}`}>{displayed}%</span>
 }
 
 function AIMatch() {
+  const { addToast } = useToast()
   const [resumeUrl, setResumeUrl] = useState(null)
   const [resumeName, setResumeName] = useState(null)
   const [checkingResume, setCheckingResume] = useState(true)
@@ -71,9 +73,11 @@ function AIMatch() {
       const res = await uploadResume(file)
       setResumeUrl(res.data.resumeUrl)
       setResumeName(res.data.resumeName)
+      addToast('Resume uploaded successfully.', 'success')
     } catch (err) {
       console.error(err)
       setUploadError('Upload failed. Please try again.')
+      addToast('Resume upload failed.', 'error')
     } finally {
       setUploading(false)
     }
@@ -90,9 +94,12 @@ function AIMatch() {
     try {
       const res = await matchResume(jobDescription.trim())
       setResult(res.data)
+      addToast('Analysis complete.', 'success')
     } catch (err) {
       console.error(err)
-      setAnalyzeError(err.response?.data?.message || 'Something went wrong analyzing your resume.')
+      const msg = err.response?.data?.message || 'Something went wrong analyzing your resume.'
+      setAnalyzeError(msg)
+      addToast(msg, 'error')
     } finally {
       setAnalyzing(false)
     }
@@ -102,9 +109,7 @@ function AIMatch() {
     <div className="min-h-screen bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white transition-colors">
       <Navbar />
       <div className="p-6 md:p-8 max-w-5xl mx-auto">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold">AI Resume Match</h1>
-        </div>
+        <h1 className="text-2xl font-semibold mb-6">AI Resume Match</h1>
 
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           {/* Resume upload */}
@@ -131,12 +136,17 @@ function AIMatch() {
                     accept="application/pdf"
                     onChange={handleFileChange}
                     disabled={uploading}
-                    className="block w-full text-sm text-slate-500 dark:text-gray-300 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-600 file:text-white file:hover:bg-blue-500 file:cursor-pointer cursor-pointer"
+                    className="block w-full text-sm text-slate-500 dark:text-gray-300 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-600 file:text-white file:hover:bg-blue-700 file:cursor-pointer cursor-pointer"
                   />
                 </label>
-                {uploading && <p className="text-slate-400 text-sm mt-2">Uploading...</p>}
+                {uploading && (
+                  <div className="flex items-center gap-2 mt-2 text-slate-400 text-sm">
+                    <div className="w-3.5 h-3.5 border-2 border-slate-300 border-t-blue-500 rounded-full animate-spin" />
+                    Uploading...
+                  </div>
+                )}
                 {uploadError && <p className="text-red-500 dark:text-red-400 text-sm mt-2">{uploadError}</p>}
-                {resumeUrl && (
+                {resumeUrl && !uploading && (
                   <p className="text-xs text-slate-400 dark:text-gray-500 mt-3">
                     Uploading a new file will replace your current resume.
                   </p>
@@ -153,88 +163,92 @@ function AIMatch() {
               onChange={(e) => setJobDescription(e.target.value)}
               rows={8}
               placeholder="Paste the job description here..."
-              className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-600 focus:outline-none focus:border-blue-500 text-sm"
+              className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-700 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-600 focus:outline-none focus:border-blue-500 text-sm resize-none"
             />
           </div>
+        </div>
+
+        {/* Status messages */}
+        <div className="flex flex-col items-center gap-2 mb-6">
+          {!resumeUrl && !checkingResume && (
+            <p className="text-slate-400 dark:text-gray-500 text-sm">Upload a resume before analyzing.</p>
+          )}
+          {resumeUrl && invalidFileSelected && (
+            <p className="text-amber-600 dark:text-amber-400 text-sm">
+              The selected file is not a PDF. Please choose a valid PDF to replace your current resume.
+            </p>
+          )}
+          {analyzeError && (
+            <p className="text-red-500 dark:text-red-400 text-sm">{analyzeError}</p>
+          )}
         </div>
 
         <div className="flex justify-center mb-8">
           <button
             onClick={handleAnalyze}
             disabled={analyzing || !resumeUrl || invalidFileSelected}
-            className="px-8 py-3 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-8 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {analyzing ? 'Analyzing...' : 'Analyze'}
+            {analyzing ? (
+              <span className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                Analyzing...
+              </span>
+            ) : 'Analyze'}
           </button>
         </div>
 
-        {!resumeUrl && !checkingResume && (
-          <p className="text-center text-slate-400 dark:text-gray-500 text-sm mb-4">Upload a resume before analyzing.</p>
-        )}
-        {resumeUrl && invalidFileSelected && (
-          <p className="text-center text-amber-500 dark:text-amber-400 text-sm mb-4">
-            The selected file is not a PDF. Please choose a valid PDF to replace your current resume.
-          </p>
-        )}
-        {analyzeError && (
-          <p className="text-center text-red-500 dark:text-red-400 text-sm mb-4">{analyzeError}</p>
-        )}
-        {analyzing && (
-          <div className="flex justify-center">
-            <div className="w-8 h-8 border-2 border-slate-300 dark:border-slate-600 border-t-blue-500 rounded-full animate-spin" />
-          </div>
-        )}
-
         {result && !result.isResume && (
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 text-center border border-slate-200 dark:border-transparent shadow-sm">
-            <p className="text-amber-500 dark:text-amber-400 font-medium mb-2">This doesn't look like a valid resume.</p>
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 text-center border border-amber-200 dark:border-amber-700/40 shadow-sm">
+            <div className="text-3xl mb-2">⚠️</div>
+            <p className="text-amber-700 dark:text-amber-400 font-medium mb-1">This doesn't look like a valid resume.</p>
             <p className="text-slate-500 dark:text-gray-400 text-sm">Please upload a proper resume PDF and try again.</p>
           </div>
         )}
 
         {result && result.isResume && (
           <div className="bg-white dark:bg-slate-800 rounded-xl p-6 flex flex-col gap-6 border border-slate-200 dark:border-transparent shadow-sm">
-            <div className="flex flex-col items-center">
+            {/* Score */}
+            <div className="flex flex-col items-center py-2">
               <AnimatedScore score={result.matchPercentage} />
-              <p className="text-slate-500 dark:text-gray-400 text-sm mt-1">Match Score</p>
+              <p className="text-slate-500 dark:text-gray-400 text-sm mt-2">Match Score</p>
             </div>
 
             {result.summary && (
-              <p className="text-slate-600 dark:text-gray-300 text-sm text-center max-w-2xl mx-auto">{result.summary}</p>
+              <p className="text-slate-600 dark:text-gray-300 text-sm text-center max-w-2xl mx-auto leading-relaxed">
+                {result.summary}
+              </p>
             )}
 
             <div className="grid md:grid-cols-2 gap-6">
               <div>
-                <h4 className="text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Strengths</h4>
+                <h4 className="text-sm font-semibold text-slate-700 dark:text-gray-300 mb-3">Strengths</h4>
                 <div className="flex flex-wrap gap-2">
-                  {result.strengths?.length > 0 ? (
-                    result.strengths.map((skill, i) => (
-                      <span key={i} className="text-xs bg-green-500/20 text-green-700 dark:text-green-300 px-3 py-1 rounded-full">{skill}</span>
-                    ))
-                  ) : (
-                    <p className="text-slate-400 text-sm">None listed.</p>
-                  )}
+                  {result.strengths?.length > 0 ? result.strengths.map((s, i) => (
+                    <span key={i} className="text-xs bg-green-500/15 border border-green-400/30 text-green-700 dark:text-green-300 px-3 py-1 rounded-full">{s}</span>
+                  )) : <p className="text-slate-400 text-sm">None listed.</p>}
                 </div>
               </div>
               <div>
-                <h4 className="text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Missing Skills</h4>
+                <h4 className="text-sm font-semibold text-slate-700 dark:text-gray-300 mb-3">Missing Skills</h4>
                 <div className="flex flex-wrap gap-2">
-                  {result.missingSkills?.length > 0 ? (
-                    result.missingSkills.map((skill, i) => (
-                      <span key={i} className="text-xs bg-red-500/20 text-red-700 dark:text-red-300 px-3 py-1 rounded-full">{skill}</span>
-                    ))
-                  ) : (
-                    <p className="text-slate-400 text-sm">None listed.</p>
-                  )}
+                  {result.missingSkills?.length > 0 ? result.missingSkills.map((s, i) => (
+                    <span key={i} className="text-xs bg-red-500/15 border border-red-400/30 text-red-700 dark:text-red-300 px-3 py-1 rounded-full">{s}</span>
+                  )) : <p className="text-slate-400 text-sm">None listed.</p>}
                 </div>
               </div>
             </div>
 
             {result.suggestions?.length > 0 && (
               <div>
-                <h4 className="text-sm font-medium text-slate-700 dark:text-gray-300 mb-2">Suggestions</h4>
-                <ul className="list-disc list-inside text-sm text-slate-600 dark:text-gray-300 flex flex-col gap-1">
-                  {result.suggestions.map((tip, i) => <li key={i}>{tip}</li>)}
+                <h4 className="text-sm font-semibold text-slate-700 dark:text-gray-300 mb-3">Suggestions</h4>
+                <ul className="flex flex-col gap-2">
+                  {result.suggestions.map((tip, i) => (
+                    <li key={i} className="flex gap-2 text-sm text-slate-600 dark:text-gray-300">
+                      <span className="text-blue-500 shrink-0 mt-0.5">→</span>
+                      <span>{tip}</span>
+                    </li>
+                  ))}
                 </ul>
               </div>
             )}

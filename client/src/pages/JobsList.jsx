@@ -4,18 +4,20 @@ import Navbar from '../components/Navbar'
 import SearchFilterBar from '../components/SearchFilterBar'
 import JobModal from '../components/JobModal'
 import { JobRowSkeleton } from '../components/Skeleton'
+import { useToast } from '../context/ToastContext'
 import { getJobs } from '../api/jobs'
 
-const STATUS_BADGE_COLORS = {
-  Applied: 'bg-blue-500/20 text-blue-600 dark:text-blue-300',
-  OA: 'bg-amber-500/20 text-amber-600 dark:text-amber-300',
-  Interview: 'bg-violet-500/20 text-violet-600 dark:text-violet-300',
-  Offer: 'bg-green-500/20 text-green-600 dark:text-green-300',
-  Rejected: 'bg-red-500/20 text-red-600 dark:text-red-300',
+const STATUS_BADGE = {
+  Applied:   'bg-blue-500/15 text-blue-700 dark:text-blue-300',
+  OA:        'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+  Interview: 'bg-violet-500/15 text-violet-700 dark:text-violet-300',
+  Offer:     'bg-green-500/15 text-green-700 dark:text-green-300',
+  Rejected:  'bg-red-500/15 text-red-700 dark:text-red-300',
 }
 
 function JobsList() {
   const navigate = useNavigate()
+  const { addToast } = useToast()
   const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -23,14 +25,14 @@ function JobsList() {
   const [jobToEdit, setJobToEdit] = useState(null)
   const [filters, setFilters] = useState({ search: '', status: 'All', sort: 'newest' })
 
-  const fetchJobs = useCallback(async (activeFilters) => {
+  const fetchJobs = useCallback(async (f) => {
     try {
       setLoading(true)
       setError('')
       const params = {}
-      if (activeFilters.search.trim()) params.search = activeFilters.search.trim()
-      if (activeFilters.status !== 'All') params.status = activeFilters.status
-      if (activeFilters.sort !== 'newest') params.sort = activeFilters.sort
+      if (f.search.trim()) params.search = f.search.trim()
+      if (f.status !== 'All') params.status = f.status
+      if (f.sort !== 'newest') params.sort = f.sort
       const res = await getJobs(params)
       setJobs(res.data)
     } catch (err) {
@@ -41,14 +43,9 @@ function JobsList() {
     }
   }, [])
 
-  useEffect(() => {
-    fetchJobs(filters)
-  }, [filters, fetchJobs])
+  useEffect(() => { fetchJobs(filters) }, [filters, fetchJobs])
 
-  const handleEditClick = (job) => {
-    setJobToEdit(job)
-    setModalOpen(true)
-  }
+  const isFiltered = filters.search || filters.status !== 'All'
 
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white transition-colors">
@@ -58,7 +55,7 @@ function JobsList() {
           <h1 className="text-2xl font-semibold">All Applications</h1>
           <button
             onClick={() => { setJobToEdit(null); setModalOpen(true) }}
-            className="text-sm px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium transition-colors"
+            className="text-sm px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors"
           >
             + Add Job
           </button>
@@ -74,15 +71,23 @@ function JobsList() {
           </div>
         ) : jobs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <p className="text-4xl mb-4">📋</p>
-            <p className="text-slate-500 dark:text-slate-400 font-medium">No jobs match your search.</p>
-            <p className="text-slate-400 dark:text-slate-500 text-sm mt-1">Try adjusting your filters or add a new application.</p>
-            <button
-              onClick={() => { setJobToEdit(null); setModalOpen(true) }}
-              className="mt-4 text-sm px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white"
-            >
-              + Add Job
-            </button>
+            <div className="text-5xl mb-4">{isFiltered ? '🔍' : '📋'}</div>
+            <p className="text-slate-600 dark:text-slate-300 font-medium mb-1">
+              {isFiltered ? 'No results found' : 'No applications yet'}
+            </p>
+            <p className="text-slate-400 dark:text-slate-500 text-sm mb-5">
+              {isFiltered
+                ? 'Try adjusting your search or filters.'
+                : 'Add your first job application to get started.'}
+            </p>
+            {!isFiltered && (
+              <button
+                onClick={() => { setJobToEdit(null); setModalOpen(true) }}
+                className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors"
+              >
+                + Add Job
+              </button>
+            )}
           </div>
         ) : (
           <div className="flex flex-col gap-3">
@@ -90,7 +95,7 @@ function JobsList() {
               <div
                 key={job._id}
                 onClick={() => navigate(`/jobs/${job._id}`)}
-                className="bg-white dark:bg-slate-800 rounded-lg p-4 flex items-center justify-between cursor-pointer border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-slate-500 transition-colors shadow-sm"
+                className="bg-white dark:bg-slate-800 rounded-xl p-4 flex items-center justify-between cursor-pointer border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-slate-500 transition-colors shadow-sm"
               >
                 <div>
                   <p className="font-medium text-slate-900 dark:text-white">{job.company}</p>
@@ -101,13 +106,17 @@ function JobsList() {
                     </p>
                   )}
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className={`text-xs font-medium px-3 py-1 rounded-full ${STATUS_BADGE_COLORS[job.status] || 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-gray-300'}`}>
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className={`text-xs font-medium px-3 py-1 rounded-full border ${
+                    STATUS_BADGE[job.status]
+                      ? `${STATUS_BADGE[job.status]} border-current/30`
+                      : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-gray-300 border-slate-200 dark:border-slate-600'
+                  }`}>
                     {job.status}
                   </span>
                   <button
-                    onClick={(e) => { e.stopPropagation(); handleEditClick(job) }}
-                    className="text-slate-400 hover:text-slate-700 dark:hover:text-white text-sm px-2"
+                    onClick={(e) => { e.stopPropagation(); setJobToEdit(job); setModalOpen(true) }}
+                    className="text-slate-400 hover:text-slate-700 dark:hover:text-white text-sm px-2 py-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
                   >
                     Edit
                   </button>
@@ -123,6 +132,7 @@ function JobsList() {
         onClose={() => setModalOpen(false)}
         onSuccess={() => fetchJobs(filters)}
         jobToEdit={jobToEdit}
+        onToast={addToast}
       />
     </div>
   )
