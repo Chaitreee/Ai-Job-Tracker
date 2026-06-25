@@ -26,7 +26,10 @@ function Login() {
       login(userData, token)
       navigate('/dashboard')
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Please try again.')
+      const msg =
+        err.response?.data?.message ||
+        (err.code === 'ERR_NETWORK' ? 'Cannot reach server. Check your connection.' : 'Login failed. Please try again.')
+      setError(msg)
     } finally {
       setIsLoading(false)
     }

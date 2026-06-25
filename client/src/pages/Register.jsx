@@ -33,7 +33,10 @@ function Register() {
       await axiosInstance.post('/auth/register', { name, email, password })
       navigate('/login')
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.')
+      const msg =
+        err.response?.data?.message ||
+        (err.code === 'ERR_NETWORK' ? 'Cannot reach server. Check your connection.' : 'Registration failed. Please try again.')
+      setError(msg)
     } finally {
       setIsLoading(false)
     }
