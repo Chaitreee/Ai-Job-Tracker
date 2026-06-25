@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import axiosInstance from '../utils/axiosInstance'
 import { useTheme } from '../context/ThemeContext'
+import { SunIcon, MoonIcon } from '../components/Icons'
 
 function Register() {
   const [name, setName] = useState('')
@@ -40,6 +41,18 @@ function Register() {
 
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white flex items-center justify-center p-4 transition-colors">
+      {/* Back to home */}
+      <Link
+        to="/"
+        className="fixed top-4 left-4 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+        aria-label="Back to home"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M19 12H5M5 12L12 19M5 12L12 5"/>
+        </svg>
+        Home
+      </Link>
+
       {/* Theme toggle top-right */}
       <button
         onClick={toggleTheme}
@@ -47,7 +60,7 @@ function Register() {
         title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
         aria-label="Toggle theme"
       >
-        {theme === 'dark' ? '☀️' : '🌙'}
+        {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
       </button>
 
       <form

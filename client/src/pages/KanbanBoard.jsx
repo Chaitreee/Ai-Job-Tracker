@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar'
 import KanbanColumn from '../components/KanbanColumn'
 import JobModal from '../components/JobModal'
 import { KanbanSkeleton } from '../components/Skeleton'
+import { KanbanIcon } from '../components/Icons'
 import { useToast } from '../context/ToastContext'
 import { getJobs, updateJob } from '../api/jobs'
 
@@ -75,7 +76,9 @@ function KanbanBoard() {
           <KanbanSkeleton />
         ) : jobs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="text-6xl mb-4">🗂️</div>
+            <div className="mb-4 text-slate-300 dark:text-slate-600">
+              <KanbanIcon className="w-14 h-14" />
+            </div>
             <h2 className="text-xl font-semibold text-slate-700 dark:text-slate-200 mb-2">Your board is empty</h2>
             <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">Add a job to start organizing your applications.</p>
             <button

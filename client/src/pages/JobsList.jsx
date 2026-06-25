@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar'
 import SearchFilterBar from '../components/SearchFilterBar'
 import JobModal from '../components/JobModal'
 import { JobRowSkeleton } from '../components/Skeleton'
+import { ChecklistIcon } from '../components/Icons'
 import { useToast } from '../context/ToastContext'
 import { getJobs } from '../api/jobs'
 
@@ -71,7 +72,9 @@ function JobsList() {
           </div>
         ) : jobs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="text-5xl mb-4">{isFiltered ? '🔍' : '📋'}</div>
+            <div className="mb-4 text-slate-300 dark:text-slate-600">
+              <ChecklistIcon className="w-12 h-12" />
+            </div>
             <p className="text-slate-600 dark:text-slate-300 font-medium mb-1">
               {isFiltered ? 'No results found' : 'No applications yet'}
             </p>
