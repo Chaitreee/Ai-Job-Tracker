@@ -17,10 +17,17 @@ const userSchema = new mongoose.Schema(
             trim: true,
         },
 
+        // Optional — Google OAuth users don't have a password
         password: {
             type: String,
-            required: true,
             minlength: 6,
+            default: null,
+        },
+
+        // Set when the account was created or linked via Google OAuth
+        googleId: {
+            type: String,
+            default: null,
         },
 
         resumeUrl: {
@@ -38,18 +45,18 @@ const userSchema = new mongoose.Schema(
     }
 );
 
-// Hash password before saving
+// Hash password before saving — only when password is set and modified
 userSchema.pre("save", async function () {
-    if (!this.isModified("password")) {
+    if (!this.password || !this.isModified("password")) {
         return;
     }
-
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
 });
 
 // Compare entered password with stored hash
 userSchema.methods.comparePassword = async function (enteredPassword) {
+    if (!this.password) return false;
     return await bcrypt.compare(enteredPassword, this.password);
 };
 

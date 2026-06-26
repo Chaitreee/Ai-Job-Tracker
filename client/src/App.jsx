@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import GoogleAuthSuccess from './pages/GoogleAuthSuccess'
 import Dashboard from './pages/Dashboard'
 import KanbanBoard from './pages/KanbanBoard'
 import JobsList from './pages/JobsList'
@@ -16,6 +17,7 @@ function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/auth/google/success" element={<GoogleAuthSuccess />} />
 
         <Route
           path="/dashboard"

@@ -4,6 +4,7 @@ import axiosInstance from '../utils/axiosInstance'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { SunIcon, MoonIcon } from '../components/Icons'
+import GoogleButton from '../components/GoogleButton'
 
 function Login() {
   const [email, setEmail] = useState('')
@@ -112,6 +113,15 @@ function Login() {
         >
           {isLoading ? 'Signing in...' : 'Sign In'}
         </button>
+
+        {/* Divider */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-px bg-slate-200 dark:bg-slate-600" />
+          <span className="text-xs text-slate-400 dark:text-slate-500">or</span>
+          <div className="flex-1 h-px bg-slate-200 dark:bg-slate-600" />
+        </div>
+
+        <GoogleButton label="Continue with Google" />
 
         <p className="text-sm text-center text-slate-500 dark:text-slate-400">
           Don't have an account?{' '}

@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import axiosInstance from '../utils/axiosInstance'
 import { useTheme } from '../context/ThemeContext'
 import { SunIcon, MoonIcon } from '../components/Icons'
+import GoogleButton from '../components/GoogleButton'
 
 function Register() {
   const [name, setName] = useState('')
@@ -16,10 +17,12 @@ function Register() {
   const navigate = useNavigate()
 
   const validate = () => {
+    if (!name.trim()) return 'Name is required'
     if (password !== confirmPassword) return 'Passwords do not match'
     if (password.length < 6) return 'Password must be at least 6 characters'
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) return 'Please enter a valid email address'
+    // Require format: local@domain.tld where tld is 2+ alpha chars only
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/
+    if (!emailRegex.test(email)) return 'Please enter a valid email address (e.g. you@gmail.com)'
     return ''
   }
 
@@ -106,6 +109,15 @@ function Register() {
         >
           {isLoading ? 'Creating account...' : 'Create Account'}
         </button>
+
+        {/* Divider */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-px bg-slate-200 dark:bg-slate-600" />
+          <span className="text-xs text-slate-400 dark:text-slate-500">or</span>
+          <div className="flex-1 h-px bg-slate-200 dark:bg-slate-600" />
+        </div>
+
+        <GoogleButton label="Sign up with Google" />
 
         <p className="text-sm text-center text-slate-500 dark:text-slate-400">
           Already have an account?{' '}

@@ -14,6 +14,14 @@ export const registerUser = async (req, res) => {
             });
         }
 
+        // Validate email format — TLD must be 2+ alpha characters (blocks 1234@12.34 etc.)
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({
+                message: "Please enter a valid email address (e.g. you@gmail.com)",
+            });
+        }
+
         // Check if user already exists
         const existingUser = await User.findOne({ email });
 
