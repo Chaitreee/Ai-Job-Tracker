@@ -1,23 +1,36 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import passport from "./config/passport.js";
 
 import connectDB from "./config/db.js";
-
 import authRoutes from "./routes/authRoutes.js";
 import jobRoutes from "./routes/jobRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
 
-// Load environment variables
+// Load environment variables FIRST before anything else
 dotenv.config();
+
+// Import passport AFTER dotenv so env vars are available
+const { default: passport } = await import("./config/passport.js");
 
 // Initialize Express app
 const app = express();
 
 // Middleware
+const allowedOrigins = [
+    process.env.CLIENT_URL?.replace(/\/$/, ""),
+    "http://localhost:5173",
+    "http://localhost:5174",
+].filter(Boolean);
+
 app.use(cors({
-    origin: process.env.CLIENT_URL || "http://localhost:5173",
+    origin: (origin, callback) => {
+        // Allow requests with no origin (Postman, curl, server-to-server)
+        if (!origin) return callback(null, true);
+        // Strip trailing slash from incoming origin before comparing
+        if (allowedOrigins.includes(origin.replace(/\/$/, ""))) return callback(null, true);
+        callback(new Error(`CORS: origin ${origin} not allowed`));
+    },
     credentials: true,
 }));
 app.use(express.json());
@@ -28,17 +41,6 @@ app.use(passport.initialize());
 // Test route
 app.get("/", (req, res) => {
     res.json({ message: "Server is running successfully!" });
-});
-
-// Temporary diagnostic — remove after fixing OAuth
-app.get("/debug-oauth", (req, res) => {
-    res.json({
-        clientIDSet: !!process.env.GOOGLE_CLIENT_ID,
-        clientIDLength: process.env.GOOGLE_CLIENT_ID?.length || 0,
-        clientIDPrefix: process.env.GOOGLE_CLIENT_ID?.substring(0, 20) || "NOT SET",
-        callbackURL: process.env.GOOGLE_CALLBACK_URL || "NOT SET",
-        clientURL: process.env.CLIENT_URL || "NOT SET",
-    });
 });
 
 // Mount routes
