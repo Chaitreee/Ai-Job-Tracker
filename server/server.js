@@ -30,6 +30,17 @@ app.get("/", (req, res) => {
     res.json({ message: "Server is running successfully!" });
 });
 
+// Temporary diagnostic — remove after fixing OAuth
+app.get("/debug-oauth", (req, res) => {
+    res.json({
+        clientIDSet: !!process.env.GOOGLE_CLIENT_ID,
+        clientIDLength: process.env.GOOGLE_CLIENT_ID?.length || 0,
+        clientIDPrefix: process.env.GOOGLE_CLIENT_ID?.substring(0, 20) || "NOT SET",
+        callbackURL: process.env.GOOGLE_CALLBACK_URL || "NOT SET",
+        clientURL: process.env.CLIENT_URL || "NOT SET",
+    });
+});
+
 // Mount routes
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/jobs", jobRoutes);
